@@ -91,6 +91,11 @@ func _build_environment() -> void:
 
 
 ## t: 0..1 (0 = sunrise, 0.25 = noon, 0.5 = sunset, 0.75 = midnight)
+## Phones: no real-time shadows (the biggest cost on weak GPUs).
+func set_mobile_quality() -> void:
+	sun.shadow_enabled = false
+
+
 func set_time(t: float) -> void:
 	var elev: float = sin(t * TAU)
 	var day: float = clampf(elev * 2.5 + 0.35, 0.0, 1.0)

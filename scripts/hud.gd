@@ -73,6 +73,13 @@ var shop_sell_everything: Button
 
 # inventory window
 var inv_panel: PanelContainer
+var backpack_panel: PanelContainer
+var stats_panel: PanelContainer
+var toolbar: HBoxContainer
+var help_label: Label
+var touch_mode: bool = false
+var touch_close: Button = null
+var scrolls: Array = []   # [ScrollContainer, content] pairs sized to the screen
 var inv_title: Label
 var inv_grid: GridContainer
 var char_title: Label
@@ -133,6 +140,66 @@ func _style(bg: Color, border: Color = Color(0.85, 0.65, 0.3, 0.35)) -> StyleBox
 	sb.set_corner_radius_all(8)
 	sb.set_content_margin_all(12)
 	return sb
+
+
+## Puts content in a scroll area that grows with the content but never gets
+## taller than the screen (small phone screens in landscape).
+func _scrollable(panel: Control, content: Control) -> void:
+	var sc := ScrollContainer.new()
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	sc.mouse_filter = Control.MOUSE_FILTER_PASS
+	panel.add_child(sc)
+	sc.add_child(content)
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scrolls.append([sc, content])
+
+
+func _fit_scrolls() -> void:
+	var vh: float = root.get_viewport_rect().size.y
+	for pair in scrolls:
+		var sc: ScrollContainer = pair[0]
+		var content: Control = pair[1]
+		if not sc.is_visible_in_tree():
+			continue
+		var want: Vector2 = content.get_combined_minimum_size()
+		var target := Vector2(want.x + 14.0, minf(want.y, vh - 70.0))
+		if not sc.custom_minimum_size.is_equal_approx(target):
+			sc.custom_minimum_size = target
+
+
+func _process(_delta: float) -> void:
+	_fit_scrolls()
+	if touch_mode and touch_close != null:
+		touch_close.visible = inv_panel.visible or shop_panel.visible
+
+
+func _on_touch_close() -> void:
+	if shop_panel.visible:
+		shop_closed.emit()
+	elif inv_panel.visible:
+		inventory_closed.emit()
+
+
+func set_touch_mode(on: bool) -> void:
+	touch_mode = on
+	help_label.visible = not on
+	backpack_panel.visible = not on
+	if on:
+		# phone layout: stats top-left, build pieces + hints at the top,
+		# the lower half stays free for the joystick and the action buttons
+		toolbar.visible = false
+		stats_panel.custom_minimum_size = Vector2(230, 0)
+		_anchor(stats_panel, 0, 0, 12, 92, END, END)
+		_anchor(build_bar, 0.5, 0, 0, 10, BOTH, END)
+		_full_width(prompt_label, 78, 100, false)
+		_full_width(notify_box, 120, 120, false)
+		touch_close = Button.new()
+		touch_close.text = "  CLOSE  X  "
+		touch_close.add_theme_font_size_override("font_size", 22)
+		_anchor(touch_close, 1, 0, -10, 10, BEGIN, END)
+		touch_close.visible = false
+		touch_close.pressed.connect(_on_touch_close)
+		root.add_child(touch_close)
 
 
 func _panel(alpha: float = 0.72) -> PanelContainer:
@@ -220,7 +287,7 @@ func _build_menu() -> void:
 
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
-	panel.add_child(v)
+	_scrollable(panel, v)
 
 	var title := _label("WILDZONE", 48, GOLD)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -396,6 +463,7 @@ func _build_game_ui() -> void:
 
 	# bottom-left: stats
 	var sp := _panel()
+	stats_panel = sp
 	sp.custom_minimum_size = Vector2(280, 0)
 	_anchor(sp, 0, 1, 16, -16, END, BEGIN)
 	game_ui.add_child(sp)
@@ -419,6 +487,7 @@ func _build_game_ui() -> void:
 
 	# right: backpack
 	var ip := _panel()
+	backpack_panel = ip
 	ip.custom_minimum_size = Vector2(220, 0)
 	_anchor(ip, 1, 0.5, -16, 0, BEGIN, BOTH)
 	game_ui.add_child(ip)
@@ -430,6 +499,7 @@ func _build_game_ui() -> void:
 
 	# toolbar (bottom centre)
 	var tb := HBoxContainer.new()
+	toolbar = tb
 	tb.add_theme_constant_override("separation", 6)
 	tb.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_anchor(tb, 0.5, 1, 0, -34, BOTH, BEGIN)
@@ -500,6 +570,7 @@ func _build_game_ui() -> void:
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_full_width(help, -24, -4, true)
 	game_ui.add_child(help)
+	help_label = help
 
 	death_overlay = ColorRect.new()
 	death_overlay.color = Color(0.4, 0.0, 0.0, 0.35)
@@ -574,6 +645,7 @@ func set_build_piece(idx: int, inv: Dictionary) -> void:
 		var locked: bool = need > int(last_stats.get("level", 1))
 		var ok: bool = Data.can_afford(inv, piece["cost"]) and not locked
 		var sel: bool = i == idx
+		build_slots[i].visible = sel or not touch_mode
 		var lbl: Label = build_slots[i].get_child(0)
 		lbl.text = String(piece["name"]) if not sel else "%s\n%s" % [piece["name"], Data.cost_text(piece["cost"])]
 		if locked:
@@ -717,7 +789,7 @@ func _build_shop() -> void:
 
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 6)
-	shop_panel.add_child(v)
+	_scrollable(shop_panel, v)
 	var title := _label("Trader Ion", 28, GOLD)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(title)
@@ -842,7 +914,7 @@ func _build_inventory() -> void:
 
 	var outer := VBoxContainer.new()
 	outer.add_theme_constant_override("separation", 8)
-	inv_panel.add_child(outer)
+	_scrollable(inv_panel, outer)
 	var head := _label("Inventory & Character   [I / Tab]", 24, GOLD)
 	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	outer.add_child(head)

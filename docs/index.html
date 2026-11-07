@@ -78,7 +78,8 @@ body {
 		</style>
 		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
 <link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
-<style>html,body{user-select:none;-webkit-user-select:none;-ms-user-select:none;-webkit-touch-callout:none;}</style>
+<script>(function () { var done = false; function goLandscape() { if (done) { return; } done = true; try { if (window.self !== window.top) { return; } var el = document.documentElement; var p = el.requestFullscreen ? el.requestFullscreen() : null; if (p && p.then) { p.then(function () { if (screen.orientation && screen.orientation.lock) { screen.orientation.lock("landscape").catch(function () {}); } }).catch(function () {}); } } catch (e) {} } if (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) { window.addEventListener("touchend", goLandscape, { once: true }); } })();</script>
+<style>html,body,canvas{touch-action:none;overscroll-behavior:none;}html,body{user-select:none;-webkit-user-select:none;-ms-user-select:none;-webkit-touch-callout:none;}</style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 <script>window.__cgQ = []; window.cg = function (fn) { if (window.__cgReady) { try { fn(); } catch (e) { console.log(e); } } else { window.__cgQ.push(fn); } }; (function () { try { if (!window.CrazyGames || !window.CrazyGames.SDK) { return; } window.CrazyGames.SDK.init().then(function () { window.__cgReady = true; var q = window.__cgQ; window.__cgQ = []; q.forEach(function (fn) { try { fn(); } catch (e) { console.log(e); } }); }).catch(function (e) { console.log("CrazyGames SDK init failed", e); }); } catch (e) { console.log(e); } })();</script>
 	</head>
@@ -99,7 +100,7 @@ body {
 
 		<script src="index.js"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":177744,"index.wasm":35376909},"focusCanvas":true,"gdextensionLibs":[]};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":true,"fileSizes":{"index.pck":188464,"index.wasm":35376909},"focusCanvas":true,"gdextensionLibs":[]};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 

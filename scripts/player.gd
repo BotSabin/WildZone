@@ -72,7 +72,8 @@ func _ready() -> void:
 		camera.current = true
 		name_label.visible = false
 		camera_pivot.rotation.x = pitch
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		if main == null or not main.touch_mode:
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	else:
 		U.set_view_range(model, 160.0)
 
@@ -193,14 +194,20 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var mm := event as InputEventMouseMotion
-		rotation.y -= mm.relative.x * MOUSE_SENSITIVITY
-		pitch -= mm.relative.y * MOUSE_SENSITIVITY
-		pitch = clampf(pitch, deg_to_rad(-65.0), deg_to_rad(50.0))
-		camera_pivot.rotation.x = pitch
+		apply_look(mm.relative * MOUSE_SENSITIVITY)
 	elif event is InputEventMouseButton and event.is_pressed():
+		if main != null and main.touch_mode:
+			return
 		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and main != null and not main.ui_blocking():
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 			get_viewport().set_input_as_handled()
+
+
+## Turns the camera; amount is in radians (x = yaw, y = pitch).
+func apply_look(amount: Vector2) -> void:
+	rotation.y -= amount.x
+	pitch = clampf(pitch - amount.y, deg_to_rad(-65.0), deg_to_rad(50.0))
+	camera_pivot.rotation.x = pitch
 
 
 func _physics_process(delta: float) -> void:

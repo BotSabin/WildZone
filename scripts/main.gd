@@ -16,6 +16,7 @@ const PlayerScript = preload("res://scripts/player.gd")
 const AnimalScript = preload("res://scripts/animal.gd")
 const WorldScript = preload("res://scripts/world.gd")
 const HudScript = preload("res://scripts/hud.gd")
+const TouchScript = preload("res://scripts/touch_controls.gd")
 const Crazy = preload("res://scripts/crazygames.gd")
 
 const SAVE_DIR: String = "user://saves"
@@ -55,6 +56,8 @@ var action_last: Dictionary = {}    # "peer|kind" -> msec of last mine/chop
 
 # --- local ---
 var in_game: bool = false
+var touch_mode: bool = false
+var touch: Control = null
 var shop_open: bool = false
 var chat_open: bool = false
 var inv_open: bool = false
@@ -139,6 +142,9 @@ func _ready() -> void:
 		defaults["status"] = "Your friend invited you to room %s — pick a name and character, then press JOIN." % room
 	hud.setup_menu(defaults)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	touch_mode = _detect_touch()
+	if touch_mode:
+		_setup_touch()
 	Crazy.loading_stop()
 
 	var args: PackedStringArray = OS.get_cmdline_user_args()
@@ -384,7 +390,7 @@ func _enter_game() -> void:
 	print("[game] entered the world as ", local_name)
 	hud.show_menu(false)
 	menu_cam.current = false
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_capture_mouse()
 	_select_tool(0)
 	Crazy.gameplay_start()
 	hud.notify("Welcome, %s! Hunt, mine, chop, build — and sell to Trader Ion." % local_name, Color(1.0, 0.85, 0.5))
@@ -439,7 +445,7 @@ func _client_process(delta: float) -> void:
 		elif not my_dead:
 			if Input.is_action_just_pressed("interact"):
 				_interact()
-			if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			if touch_mode or Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 				_use_tool(me, tool)
 
 	hud_timer -= delta
@@ -475,9 +481,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if chat_open or shop_open or inv_open:
 		return
 	if event.is_action_pressed("chat"):
-		chat_open = true
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-		hud.open_chat()
+		_open_chat()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("medkit"):
 		_srv("srv_use_medkit", [])
@@ -501,10 +505,53 @@ func _unhandled_input(event: InputEvent) -> void:
 			_cycle_build(1)
 
 
+func _open_chat() -> void:
+	if chat_open:
+		return
+	chat_open = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	hud.open_chat()
+
+
+func _capture_mouse() -> void:
+	if not touch_mode:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+func _detect_touch() -> bool:
+	if OS.get_cmdline_user_args().has("--touch"):
+		return true
+	if OS.has_feature("web"):
+		var forced: Variant = JavaScriptBridge.eval("new URLSearchParams(window.location.search).get('touch') || ''", true)
+		if String(forced) == "1":
+			return true
+		if String(forced) == "0":
+			return false
+		var coarse: Variant = JavaScriptBridge.eval("(window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ? 1 : 0", true)
+		return int(coarse) == 1
+	return OS.has_feature("mobile")
+
+
+func _setup_touch() -> void:
+	# taps must not count as mouse clicks for shooting/building
+	InputMap.action_erase_events("fire")
+	InputMap.action_erase_events("alt_fire")
+	get_window().content_scale_factor = 1.35
+	world.set_mobile_quality()
+	touch = TouchScript.new()
+	touch.name = "TouchControls"
+	touch.main = self
+	var layer := CanvasLayer.new()
+	layer.layer = 6
+	add_child(layer)
+	layer.add_child(touch)
+	hud.set_touch_mode(true)
+
+
 func _on_chat_closed() -> void:
 	chat_open = false
 	if in_game:
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		_capture_mouse()
 
 
 # ==================================================
@@ -630,7 +677,7 @@ func _close_shop() -> void:
 	shop_open = false
 	hud.hide_shop()
 	if in_game and not chat_open:
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		_capture_mouse()
 	Crazy.gameplay_start()
 
 
@@ -645,7 +692,7 @@ func _close_inventory() -> void:
 	inv_open = false
 	hud.hide_inventory()
 	if in_game and not chat_open and not shop_open:
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		_capture_mouse()
 	Crazy.gameplay_start()
 
 
