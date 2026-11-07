@@ -1,0 +1,8 @@
+# Godot
+.godot/
+*.import
+export_credentials.cfg
+# local builds (the GitHub Pages build lives in docs/)
+build/
+_backup_battle_royale/
+.DS_Store

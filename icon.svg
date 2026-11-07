@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b5876"/>
+      <stop offset="1" stop-color="#e7a35c"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="120" height="120" rx="24" fill="url(#sky)"/>
+  <circle cx="88" cy="46" r="16" fill="#ffd27a"/>
+  <path d="M4 92 L40 58 L64 80 L88 56 L124 92 L124 100 L4 100 Z" fill="#3c4f5a"/>
+  <path d="M30 104 L44 62 L58 104 Z" fill="#1f5a35"/>
+  <path d="M33 90 L44 52 L55 90 Z" fill="#2a7344"/>
+  <path d="M74 106 L86 72 L98 106 Z" fill="#1f5a35"/>
+  <rect x="4" y="100" width="120" height="24" rx="0" fill="#2f6b2a"/>
+  <path d="M4 100 H124 V100 Q124 124 100 124 H28 Q4 124 4 100 Z" fill="#2f6b2a"/>
+  <text x="64" y="120" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#ffd27a">WILDZONE</text>
+</svg>

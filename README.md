@@ -1,0 +1,42 @@
+# WILDZONE
+
+**Play now in your browser:** https://botsabin.github.io/WildZone/
+
+A co-op wilderness game made with Godot 4.3: hunt deer, wolves and bears, mine stone, iron and gold, chop trees, build cabins and bridges, and sell your loot to Trader Ion. Level up to 99 with bonuses on every level.
+
+![WILDZONE](store_assets/wildzone_landscape_1920x1080.png)
+
+## Play with friends
+1. Open the game, pick a name and a character, press **HOST ONLINE GAME**.
+2. You get a 5-letter **room code** and an invite link (copied to your clipboard).
+3. Friends open the link (or the game and type the code next to **JOIN**).
+4. Keep your tab open: your browser is the host and saves the world.
+
+Players connect directly to each other (WebRTC). A free public MQTT broker is only used to exchange the connection details when someone joins. On some strict networks (some school/company networks or mobile carriers) a direct connection isn't possible.
+
+## Controls
+| Key | Action |
+| --- | --- |
+| WASD / Shift / Space | move / sprint / jump |
+| 1–4 | rifle, pickaxe, axe, build hammer |
+| Left mouse | shoot / mine / chop / build |
+| Right mouse | remove a building piece (build mode) |
+| B / mouse wheel, R | change building piece, rotate |
+| E | interact (skin animals, trade) |
+| I or Tab | inventory & character |
+| H | use a medkit |
+| T / Enter | chat |
+| Esc | free the mouse cursor |
+
+## Project layout
+- `scripts/` — all game code (GDScript). The game world, characters and animals are built from code, no imported models.
+- `docs/` — the exported web build served by GitHub Pages.
+- `store_assets/` — cover images for game portals.
+- `CRAZYGAMES_UPLOAD.md` — how to publish on CrazyGames.
+
+## Updating the web version
+In Godot: **Project → Export → "Web (CrazyGames)"**, export to `build/web/index.html`, then copy the files from `build/web/` into `docs/` and push.
+
+## Other ways to play
+- **Desktop, same network:** run the project in Godot and press **HOST GAME**; friends join with your local IP.
+- **Dedicated server:** `godot --headless --path . -- --server --port 24560`, then join with `ws://IP` or `wss://address`.
