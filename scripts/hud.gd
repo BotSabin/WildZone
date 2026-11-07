@@ -233,7 +233,7 @@ func _build_menu() -> void:
 	v.add_child(_label("Your name", 14, DIM))
 	name_input = LineEdit.new()
 	name_input.max_length = 16
-	name_input.placeholder_text = "e.g. Sabin"
+	name_input.placeholder_text = "e.g. Name"
 	v.add_child(name_input)
 
 	v.add_child(_label("Choose your character", 14, DIM))
