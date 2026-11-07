@@ -29,7 +29,7 @@ Players connect directly to each other (WebRTC). A free public MQTT broker is on
 | Esc | free the mouse cursor |
 
 ## Playing on a phone
-Open the link in Chrome (Android) or Safari (iPhone) and turn the phone sideways. The left thumb moves (floating joystick, push to the edge to run), drag anywhere on the right to look around. Buttons: **FIRE / MINE / CHOP / BUILD** (changes with the tool), **SWAP** tool, **JUMP**, **RUN**, **E** interact, **BAG**, **+HP**, **CHAT**; in build mode **NEXT**, **ROT** and **DEL**. Tip: "Add to Home screen" for full-screen play.
+Open the link in Chrome (Android) or Safari (iPhone) and turn the phone sideways. The left thumb moves (floating joystick, push to the edge to run), drag anywhere on the right to look around. Buttons: **FIRE / MINE / CHOP / BUILD** (changes with the tool), **SWAP** tool, **JUMP**, **RUN**, **E** interact, **BAG**, **+HP**, **CHAT**; in build mode **NEXT**, **ROT** and **DEL**. Tip: "Add to Home screen" (Chrome menu → Install app / Add to Home screen) — the icon then opens the game full screen and already turned sideways.
 
 ## Project layout
 - `scripts/` — all game code (GDScript). The game world, characters and animals are built from code, no imported models.
@@ -38,7 +38,7 @@ Open the link in Chrome (Android) or Safari (iPhone) and turn the phone sideways
 - `CRAZYGAMES_UPLOAD.md` — how to publish on CrazyGames.
 
 ## Updating the web version
-In Godot: **Project → Export → "Web (CrazyGames)"**, export to `build/web/index.html`, then copy the files from `build/web/` into `docs/` and push.
+For GitHub Pages export the **"Web (GitHub Pages app)"** preset (installable phone app: home-screen icon opens full screen in landscape) to `build/pages/`, copy those files into `docs/` and push. For CrazyGames export **"Web (CrazyGames)"** to `build/web/` and zip its contents.
 
 ## Other ways to play
 - **Desktop, same network:** run the project in Godot and press **HOST GAME**; friends join with your local IP.

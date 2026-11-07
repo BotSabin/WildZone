@@ -46,6 +46,7 @@ var muzzle: Node3D
 var camera_pivot: Node3D
 var spring_arm: SpringArm3D
 var camera: Camera3D
+var cam_dist: float = 4.0
 var name_label: Label3D
 
 
@@ -105,7 +106,20 @@ func _build_camera() -> void:
 	camera.fov = 72.0
 	camera.far = 600.0
 	camera.current = false
-	spring_arm.add_child(camera)
+	# The spring arm only measures how far back the camera may go; the camera
+	# itself glides to that distance, so trees and slopes don't make it jump.
+	spring_arm.add_excluded_object(get_rid())
+	camera_pivot.add_child(camera)
+	camera.position = spring_arm.position + Vector3(0, 0, cam_dist)
+
+
+func _process(delta: float) -> void:
+	if not is_local or camera == null:
+		return
+	var target: float = clampf(spring_arm.get_hit_length(), 0.6, spring_arm.spring_length)
+	var speed: float = 14.0 if target < cam_dist else 2.5
+	cam_dist = lerpf(cam_dist, target, clampf(delta * speed, 0.0, 1.0))
+	camera.position = spring_arm.position + Vector3(0, 0, cam_dist)
 
 
 # ==================================================

@@ -6,7 +6,8 @@ extends Control
 
 const Data = preload("res://scripts/game_data.gd")
 
-const LOOK_SENS: float = 0.0055
+const LOOK_SENS: float = 0.0042
+const PITCH_FACTOR: float = 0.7
 const STICK_RADIUS: float = 75.0
 
 var main = null
@@ -22,6 +23,7 @@ var buttons: Array = []            # [{id, label, pos, r, action, hold}]
 var rotate_hint: Label
 var look_last: Dictionary = {}     # finger index -> last position (for smooth looking)
 var look_vel: Vector2 = Vector2.ZERO
+var finger_pos: Dictionary = {}    # finger index -> last known position (any role)
 
 
 func _ready() -> void:
@@ -55,7 +57,7 @@ func _process(_delta: float) -> void:
 	if look_vel != Vector2.ZERO:
 		var me = main._me() if main != null else null
 		if me != null and active():
-			me.apply_look(look_vel * LOOK_SENS)
+			me.apply_look(look_vel * LOOK_SENS * Vector2(1.0, PITCH_FACTOR))
 		look_vel = Vector2.ZERO
 	_layout()
 	queue_redraw()
@@ -108,46 +110,96 @@ func _input(event: InputEvent) -> void:
 		if t.pressed:
 			if not active():
 				return
+			if fingers.has(t.index):
+				_finger_up(t.index)   # stale finger with the same number
+			finger_pos[t.index] = p
 			var b: Dictionary = _button_at(p)
 			if not b.is_empty():
 				fingers[t.index] = b["id"]
 				_press_button(b)
-				get_viewport().set_input_as_handled()
 			elif p.x < get_viewport_rect().size.x * 0.42 and stick_finger < 0:
 				fingers[t.index] = "stick"
 				stick_finger = t.index
 				stick_center = p
 				stick_pos = p
-				get_viewport().set_input_as_handled()
 			else:
 				fingers[t.index] = "look"
-				get_viewport().set_input_as_handled()
-		elif fingers.has(t.index):
-			var what: String = fingers[t.index]
-			fingers.erase(t.index)
-			if what == "stick":
-				stick_finger = -1
-				_set_move(Vector2.ZERO)
-			elif what != "look":
-				_release_button(what)
+				look_last[t.index] = p
 			get_viewport().set_input_as_handled()
+		else:
+			var idx: int = _resolve(t.index, p)
+			if fingers.has(idx):
+				_finger_up(idx)
+				get_viewport().set_input_as_handled()
 	elif event is InputEventScreenDrag:
 		var d := event as InputEventScreenDrag
-		if not fingers.has(d.index):
+		var np: Vector2 = _to_local(d.position)
+		var idx2: int = _resolve(d.index, np)
+		if not fingers.has(idx2):
 			return
-		var what2: String = fingers[d.index]
+		if idx2 != d.index and not fingers.has(d.index):
+			_rekey(idx2, d.index)
+			idx2 = d.index
+		finger_pos[idx2] = np
+		var what2: String = fingers[idx2]
 		if what2 == "stick":
-			stick_pos = _to_local(d.position)
+			stick_pos = np
 			var v: Vector2 = (stick_pos - stick_center) / STICK_RADIUS
 			if v.length() > 1.0:
 				stick_center = stick_pos - v.normalized() * STICK_RADIUS
 				v = v.normalized()
 			_set_move(v)
 		elif what2 == "look":
-			var me = main._me() if main != null else null
-			if me != null:
-				me.apply_look(d.relative * LOOK_SENS)
+			# our own per-finger delta (the browser's "relative" is unreliable with 2 fingers)
+			var last: Vector2 = look_last.get(idx2, np)
+			look_last[idx2] = np
+			var delta: Vector2 = np - last
+			if delta.length() < 80.0:
+				look_vel += delta
 		get_viewport().set_input_as_handled()
+
+
+func _finger_up(idx: int) -> void:
+	var what: String = fingers[idx]
+	fingers.erase(idx)
+	finger_pos.erase(idx)
+	look_last.erase(idx)
+	if what == "stick":
+		stick_finger = -1
+		_set_move(Vector2.ZERO)
+	elif what != "look":
+		_release_button(what)
+
+
+## Phones' browsers sometimes renumber fingers when another finger lifts.
+## If the index doesn't match where that finger was, use the closest known finger.
+func _resolve(index: int, p: Vector2) -> int:
+	if fingers.has(index) and Vector2(finger_pos.get(index, p)).distance_to(p) < 110.0:
+		return index
+	var best: int = -1
+	var best_d: float = 110.0
+	for k in finger_pos.keys():
+		var dd: float = Vector2(finger_pos[k]).distance_to(p)
+		if dd < best_d:
+			best_d = dd
+			best = k
+	return best if best >= 0 else index
+
+
+func _rekey(old: int, new_idx: int) -> void:
+	if old == new_idx or not fingers.has(old):
+		return
+	var role = fingers[old]
+	fingers.erase(old)
+	fingers[new_idx] = role
+	if finger_pos.has(old):
+		finger_pos[new_idx] = finger_pos[old]
+		finger_pos.erase(old)
+	if look_last.has(old):
+		look_last[new_idx] = look_last[old]
+		look_last.erase(old)
+	if stick_finger == old:
+		stick_finger = new_idx
 
 
 func _scale() -> float:
@@ -211,6 +263,7 @@ func _release_all() -> void:
 		_release_button(id)
 	pressed.clear()
 	fingers.clear()
+	finger_pos.clear()
 	look_last.clear()
 	look_vel = Vector2.ZERO
 	stick_finger = -1
