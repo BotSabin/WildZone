@@ -17,6 +17,7 @@ const AnimalScript = preload("res://scripts/animal.gd")
 const WorldScript = preload("res://scripts/world.gd")
 const HudScript = preload("res://scripts/hud.gd")
 const TouchScript = preload("res://scripts/touch_controls.gd")
+const WebKeyboardScript = preload("res://scripts/web_keyboard.gd")
 const Crazy = preload("res://scripts/crazygames.gd")
 
 const SAVE_DIR: String = "user://saves"
@@ -546,6 +547,12 @@ func _setup_touch() -> void:
 	add_child(layer)
 	layer.add_child(touch)
 	hud.set_touch_mode(true)
+	if OS.has_feature("web"):
+		var kb := WebKeyboardScript.new()
+		kb.name = "WebKeyboard"
+		kb.main = self
+		kb.hud = hud
+		add_child(kb)
 
 
 func _on_chat_closed() -> void:

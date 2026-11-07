@@ -20,6 +20,8 @@ var stick_finger: int = -1
 var pressed: Dictionary = {}       # button id -> true while held
 var buttons: Array = []            # [{id, label, pos, r, action, hold}]
 var rotate_hint: Label
+var look_last: Dictionary = {}     # finger index -> last position (for smooth looking)
+var look_vel: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
@@ -50,6 +52,11 @@ func _process(_delta: float) -> void:
 	rotate_hint.visible = sz.y > sz.x * 1.05
 	if not active() and not fingers.is_empty():
 		_release_all()
+	if look_vel != Vector2.ZERO:
+		var me = main._me() if main != null else null
+		if me != null and active():
+			me.apply_look(look_vel * LOOK_SENS)
+		look_vel = Vector2.ZERO
 	_layout()
 	queue_redraw()
 
@@ -75,6 +82,14 @@ func _layout() -> void:
 		buttons.append({"id": "rotate", "label": "ROT", "pos": Vector2(w - 348, h - 160), "r": 32.0, "action": "", "hold": false})
 		buttons.append({"id": "piece", "label": "NEXT", "pos": Vector2(w - 335, h - 258), "r": 32.0, "action": "", "hold": false})
 		buttons.append({"id": "remove", "label": "DEL", "pos": Vector2(w - 218, h - 290), "r": 30.0, "action": "alt_fire", "hold": true})
+
+
+func button_rect(id: String) -> Rect2:
+	for b in buttons:
+		if b["id"] == id:
+			var r: float = float(b["r"]) + 6.0
+			return Rect2(Vector2(b["pos"]) - Vector2(r, r), Vector2(r, r) * 2.0)
+	return Rect2()
 
 
 func _button_at(p: Vector2) -> Dictionary:
@@ -196,6 +211,8 @@ func _release_all() -> void:
 		_release_button(id)
 	pressed.clear()
 	fingers.clear()
+	look_last.clear()
+	look_vel = Vector2.ZERO
 	stick_finger = -1
 	_set_move(Vector2.ZERO)
 	Input.action_release("sprint")
