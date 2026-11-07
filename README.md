@@ -26,10 +26,11 @@ Players connect directly to each other (WebRTC). A free public MQTT broker is on
 | I or Tab | inventory & character |
 | H | use a medkit |
 | T / Enter | chat |
-| Esc | free the mouse cursor |
+| M | big map (minimap is top-right) |
+| Esc | menu: resume or save & exit |
 
 ## Playing on a phone
-Open the link in Chrome (Android) or Safari (iPhone) and turn the phone sideways. The left thumb moves (floating joystick, push to the edge to run), drag anywhere on the right to look around. Buttons: **FIRE / MINE / CHOP / BUILD** (changes with the tool), **SWAP** tool, **JUMP**, **RUN**, **E** interact, **BAG**, **+HP**, **CHAT**; in build mode **NEXT**, **ROT** and **DEL**. Tip: "Add to Home screen" (Chrome menu → Install app / Add to Home screen) — the icon then opens the game full screen and already turned sideways.
+Open the link in Chrome (Android) or Safari (iPhone) and turn the phone sideways. The left thumb moves (floating joystick, push to the edge to run), drag anywhere on the right to look around. Buttons: **FIRE / MINE / CHOP / BUILD** (changes with the tool), **SWAP** tool, **JUMP**, **RUN**, **E** interact, **BAG**, **+HP**, **CHAT**, **MENU** (save & exit); tap the minimap for a big map; in build mode **NEXT**, **ROT** and **DEL**. Tip: "Add to Home screen" (Chrome menu → Install app / Add to Home screen) — the icon then opens the game full screen and already turned sideways.
 
 ## Project layout
 - `scripts/` — all game code (GDScript). The game world, characters and animals are built from code, no imported models.

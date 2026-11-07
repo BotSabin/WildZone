@@ -3,6 +3,7 @@ extends CanvasLayer
 
 const Data = preload("res://scripts/game_data.gd")
 const NetScript = preload("res://scripts/network_manager.gd")
+const MinimapScript = preload("res://scripts/minimap.gd")
 
 signal solo_requested(player_name: String, char_idx: int)
 signal host_requested(player_name: String, char_idx: int, port: int)
@@ -16,6 +17,8 @@ signal buy_requested(item_id: String)
 signal shop_closed
 signal chat_submitted(text: String)
 signal chat_closed
+signal pause_resumed
+signal exit_requested
 
 const GOLD := Color(1.0, 0.8, 0.4)
 const TEXT := Color(0.95, 0.93, 0.88)
@@ -39,6 +42,11 @@ var char_buttons: Array = []
 
 # game
 var game_ui: Control
+var minimap: Control
+var players_panel: PanelContainer
+var pause_panel: PanelContainer
+var pause_info: Label
+var pause_exit_btn: Button
 var hp_bar: ProgressBar
 var hp_text: Label
 var xp_bar: ProgressBar
@@ -99,6 +107,7 @@ func _ready() -> void:
 	_build_game_ui()
 	_build_shop()
 	_build_inventory()
+	_build_pause()
 	_build_menu()
 	game_ui.visible = false
 
@@ -167,6 +176,44 @@ func _fit_scrolls() -> void:
 			sc.custom_minimum_size = target
 
 
+func _build_pause() -> void:
+	pause_panel = _panel(0.95)
+	pause_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	pause_panel.custom_minimum_size = Vector2(420, 0)
+	_anchor(pause_panel, 0.5, 0.5, 0, 0, BOTH, BOTH)
+	pause_panel.visible = false
+	root.add_child(pause_panel)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 12)
+	pause_panel.add_child(v)
+	var t := _label("MENU", 30, GOLD)
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(t)
+	var resume := Button.new()
+	resume.text = "RESUME"
+	resume.add_theme_font_size_override("font_size", 22)
+	resume.custom_minimum_size = Vector2(0, 56)
+	resume.pressed.connect(func() -> void: pause_resumed.emit())
+	v.add_child(resume)
+	pause_exit_btn = Button.new()
+	pause_exit_btn.text = "SAVE & EXIT TO MENU"
+	pause_exit_btn.add_theme_font_size_override("font_size", 20)
+	pause_exit_btn.custom_minimum_size = Vector2(0, 52)
+	pause_exit_btn.pressed.connect(func() -> void: exit_requested.emit())
+	v.add_child(pause_exit_btn)
+	pause_info = _label("", 13, DIM)
+	pause_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	pause_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(pause_info)
+
+
+func show_pause(on: bool, exit_text: String = "", info: String = "") -> void:
+	pause_panel.visible = on
+	if on:
+		pause_exit_btn.text = exit_text
+		pause_info.text = info
+
+
 func _process(_delta: float) -> void:
 	_fit_scrolls()
 	if touch_mode and touch_close != null:
@@ -188,6 +235,8 @@ func set_touch_mode(on: bool) -> void:
 		# phone layout: stats top-left, build pieces + hints at the top,
 		# the lower half stays free for the joystick and the action buttons
 		toolbar.visible = false
+		players_panel.visible = false   # friends are shown on the minimap
+		minimap.set_small_size(150.0)
 		stats_panel.custom_minimum_size = Vector2(230, 0)
 		_anchor(stats_panel, 0, 0, 12, 92, END, END)
 		_anchor(build_bar, 0.5, 0, 0, 10, BOTH, END)
@@ -454,9 +503,12 @@ func _build_game_ui() -> void:
 	server_label = _label("", 13, Color(0.75, 0.85, 0.75))
 	tl.add_child(server_label)
 
-	# top-right: players
+	# top-right: minimap, players below it
+	minimap = MinimapScript.new()
+	game_ui.add_child(minimap)
 	var pp := _panel()
-	_anchor(pp, 1, 0, -16, 12, BEGIN, END)
+	players_panel = pp
+	_anchor(pp, 1, 0, -12, 192, BEGIN, END)
 	game_ui.add_child(pp)
 	players_label = _label("Players", 14)
 	pp.add_child(players_label)

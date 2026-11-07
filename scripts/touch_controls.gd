@@ -76,9 +76,10 @@ func _layout() -> void:
 		{"id": "interact", "label": "E", "pos": Vector2(w - 235, h - 185), "r": 38.0, "action": "interact", "hold": true},
 		{"id": "tool", "label": tool_label, "pos": Vector2(w - 122, h - 250), "r": 40.0, "action": "", "hold": false},
 		{"id": "sprint", "label": "RUN", "pos": Vector2(w - 352, h - 58), "r": 34.0, "action": "sprint", "hold": true},
-		{"id": "inv", "label": "BAG", "pos": Vector2(w - 40, 145), "r": 27.0, "action": "", "hold": false},
-		{"id": "med", "label": "+HP", "pos": Vector2(w - 40, 205), "r": 27.0, "action": "", "hold": false},
-		{"id": "chat", "label": "CHAT", "pos": Vector2(w - 40, 265), "r": 27.0, "action": "", "hold": false},
+		{"id": "menu", "label": "MENU", "pos": Vector2(w - 200, 40), "r": 27.0, "action": "", "hold": false},
+		{"id": "inv", "label": "BAG", "pos": Vector2(w - 200, 102), "r": 27.0, "action": "", "hold": false},
+		{"id": "med", "label": "+HP", "pos": Vector2(w - 200, 164), "r": 27.0, "action": "", "hold": false},
+		{"id": "chat", "label": "CHAT", "pos": Vector2(w - 40, 200), "r": 27.0, "action": "", "hold": false},
 	]
 	if tool == "hammer":
 		buttons.append({"id": "rotate", "label": "ROT", "pos": Vector2(w - 348, h - 160), "r": 32.0, "action": "", "hold": false})
@@ -113,6 +114,12 @@ func _input(event: InputEvent) -> void:
 			if fingers.has(t.index):
 				_finger_up(t.index)   # stale finger with the same number
 			finger_pos[t.index] = p
+			var mm: Control = main.hud.minimap
+			if Rect2(mm.position, mm.size).has_point(p):
+				finger_pos.erase(t.index)
+				mm.toggle_big()
+				get_viewport().set_input_as_handled()
+				return
 			var b: Dictionary = _button_at(p)
 			if not b.is_empty():
 				fingers[t.index] = b["id"]
@@ -237,6 +244,8 @@ func _press_button(b: Dictionary) -> void:
 		Input.action_press(action)
 		return
 	match id:
+		"menu":
+			main.toggle_pause()
 		"tool":
 			main._select_tool((main.tool_idx + 1) % Data.TOOLS.size())
 		"inv":

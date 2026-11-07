@@ -62,6 +62,8 @@ var touch: Control = null
 var shop_open: bool = false
 var chat_open: bool = false
 var inv_open: bool = false
+var pause_open: bool = false
+var mouse_was_captured: bool = false
 var my_stats: Dictionary = {}
 var my_dead: bool = false
 var time_of_day: float = 0.08
@@ -124,6 +126,9 @@ func _ready() -> void:
 	hud.shop_closed.connect(_close_shop)
 	hud.chat_submitted.connect(func(text: String) -> void: _srv("srv_chat", [text]))
 	hud.chat_closed.connect(_on_chat_closed)
+	hud.pause_resumed.connect(_close_pause)
+	hud.exit_requested.connect(_exit_game)
+	hud.minimap.main = self
 
 	ghost_ok_mat = _ghost_mat(Color(0.35, 1.0, 0.45, 0.42))
 	ghost_bad_mat = _ghost_mat(Color(1.0, 0.3, 0.25, 0.42))
@@ -398,7 +403,7 @@ func _enter_game() -> void:
 
 
 func ui_blocking() -> bool:
-	return shop_open or chat_open or inv_open or not in_game
+	return shop_open or chat_open or inv_open or pause_open or hud.minimap.big or not in_game
 
 
 # ==================================================
@@ -418,6 +423,11 @@ func _process(delta: float) -> void:
 		_server_process(delta)
 	if in_game:
 		_client_process(delta)
+		# browsers drop the mouse lock on Esc without telling us: show the menu then
+		var captured: bool = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+		if mouse_was_captured and not captured and not touch_mode and not ui_blocking():
+			_open_pause()
+		mouse_was_captured = captured
 
 
 func _me():
@@ -468,8 +478,20 @@ func _unhandled_input(event: InputEvent) -> void:
 			_close_shop()
 		elif inv_open:
 			_close_inventory()
-		else:
+		elif hud.minimap.big:
+			hud.minimap.toggle_big()
+		elif pause_open:
+			_close_pause()
+		elif not chat_open:
+			_open_pause()
+		get_viewport().set_input_as_handled()
+		return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_M and not chat_open and not pause_open:
+		hud.minimap.toggle_big()
+		if hud.minimap.big:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		else:
+			_capture_mouse()
 		get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed("inventory") and not chat_open and not shop_open:
@@ -512,6 +534,44 @@ func _open_chat() -> void:
 	chat_open = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	hud.open_chat()
+
+
+func _open_pause() -> void:
+	if pause_open or not in_game:
+		return
+	pause_open = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	Crazy.gameplay_stop()
+	if hosting and players.size() > 1:
+		hud.show_pause(true, "SAVE & EXIT TO MENU", "Your world and everyone's progress are saved. Friends in your game will be disconnected.")
+	elif hosting:
+		hud.show_pause(true, "SAVE & EXIT TO MENU", "Your character, buildings and world are saved — continue any time.")
+	else:
+		hud.show_pause(true, "LEAVE GAME", "Your character is saved in your friend's world.")
+
+
+func _close_pause() -> void:
+	if not pause_open:
+		return
+	pause_open = false
+	hud.show_pause(false)
+	Crazy.gameplay_start()
+	_capture_mouse()
+
+
+func toggle_pause() -> void:
+	if pause_open:
+		_close_pause()
+	else:
+		_open_pause()
+
+
+func _exit_game() -> void:
+	if hosting:
+		_save_all()
+		_back_to_menu("Game saved. See you soon!")
+	else:
+		_back_to_menu("You left the game.")
 
 
 func _capture_mouse() -> void:
